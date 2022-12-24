@@ -1,0 +1,349 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package genetic_ass1;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.ArrayList;
+import java.util.Random;
+import java.util.Scanner;
+import javafx.util.Pair;
+
+/**
+ *
+ * @author Hoda
+ */
+public class Genetic_ASS1 {
+    
+    static final Double pc = 0.6;             //probability of crossover 
+    static final Double pm = 0.1;            //probability of Mutation 
+    static final int populationSize = 3000;
+    static final int generationSize = 5000;
+    static Random rand = new Random(); //instance of random class
+    
+    static ArrayList<Chromosome> population = new ArrayList<>();
+    static ArrayList<Chromosome> selectedIndividuals = new ArrayList<>();
+    static ArrayList<Integer> index_selectedIndividuals = new ArrayList<>();
+    
+    
+    
+     public static void initializePopulation(int numOfGenes) {
+        population = new ArrayList<>();
+        for(int i=0; i<populationSize;i++)
+        {
+            Chromosome chromosome = new Chromosome();
+            for(int j=0; j<numOfGenes;j++)
+            {
+                    chromosome.genes.add(rand.nextBoolean());
+            }
+            population.add(chromosome);
+          //  System.out.println(population.get(i).genes.get(j));
+        }
+    }
+     
+     
+    public static void fitnessEvaluation(ArrayList<Item> items , int knapsackSize) {
+        for(int i=0; i<population.size();i++)
+        {
+            int total_C_c_fitness = 0 , total_C_weight = 0;
+            for(int j=0;j<items.size();j++){
+                if(population.get(i).genes.get(j)) {
+                    total_C_weight += items.get(j).weight;
+                    total_C_c_fitness += items.get(j).value;
+                }
+            }
+          if(total_C_weight > knapsackSize || total_C_c_fitness==0){
+                 //population.get(i).c_fitness = -1;
+//                 System.out.println( population.get(i).c_fitness+"llllllllll"+total_C_weight);
+                 population.remove(i);
+                  i--;
+                 }
+           else{
+            population.get(i).c_fitness = total_C_c_fitness;
+           }
+        }
+    } 
+    
+    private static int rouletteWheelSelection() {
+            int totalFitness=0;
+            for (int i=0;i<population.size() ;i++){
+                       totalFitness +=population.get(i).c_fitness;
+                    
+            }
+ //********************           
+            int randomFitness = rand.nextInt(totalFitness); 
+         //   System.out.println(randomFitness+"ghhhhhhhh");
+            int cumulativeFitness=0;
+            int preCumulative=0;
+            for(int j=0 ;j<population.size() ;j++) {
+                cumulativeFitness +=population.get(j).c_fitness;
+                if( cumulativeFitness > randomFitness)
+                    return j;
+            }
+             return -8;
+    }  
+    public static void select2Individuals() {
+        //********************************
+            selectedIndividuals = new ArrayList<>();
+            index_selectedIndividuals = new ArrayList<>();
+            int index1=rouletteWheelSelection();
+            int index2=0;
+            index_selectedIndividuals.add(index1);
+            selectedIndividuals.add(population.get(index1));
+            
+            index2=rouletteWheelSelection();
+            while(index_selectedIndividuals.get(0)==index2){
+                 index2=rouletteWheelSelection();
+ 
+            }
+            index_selectedIndividuals.add(index2);
+            selectedIndividuals.add(population.get(index2));
+    }  
+    
+    
+    
+    public static void crossOver(int numOfGenes){
+        Double r2 = rand.nextDouble();
+       // System.out.println("R2222222"+r2);  
+        if(r2 > pc){
+            return;
+        }
+        int r1 = rand.nextInt(numOfGenes-1) ;
+        Chromosome c1 = selectedIndividuals.get(0);
+        Chromosome c2 = selectedIndividuals.get(1);
+       //  System.out.println("R11111111111_"+r1);  
+        for(int i=r1;i<numOfGenes;i++){
+            Boolean tmp = c1.genes.get(i);
+            c1.genes.set(i,c2.genes.get(i));
+            c2.genes.set(i,tmp);
+        }
+    }
+    public static void mutation(Chromosome chromosome) {
+        for(int i=0;i<chromosome.genes.size(); i++){
+            Double r3 = rand.nextDouble();
+             
+            if(r3 <=pm){
+              //   System.out.println(r3+"r3");
+                chromosome.genes.set(i,!chromosome.genes.get(i));
+                
+            }
+        }
+    }
+    
+        public static void mutation_2Individuals() {
+            mutation(selectedIndividuals.get(0));
+            mutation(selectedIndividuals.get(1));
+            
+          //  System.out.println(selectedIndividuals.get(0).c_fitness+"inside mutation");
+         //   System.out.println(selectedIndividuals.get(1).c_fitness+"inside mutation");
+    }
+    
+        public static void Replacement() {
+            for(int i=0;i<population.size() ;i++){
+                if(i==index_selectedIndividuals.get(0)){
+                     population.set(i,selectedIndividuals.get(0));
+                }
+                else if (i==index_selectedIndividuals.get(1)){
+                     population.set(i,selectedIndividuals.get(1));
+                }
+            }
+    }
+       public static Boolean isValidPopulation(){
+           if(population.size()>=2)
+               return true;
+           return true;
+    }  
+       
+    public static void getFinalSolution(int numOfTestCase,ArrayList<Item> items){
+
+        int maxFitness = 0, sol_index = -1 , numOfSelectedItems=0;
+        for(int i=0;i<population.size();++i){
+            if(population.get(i).c_fitness > maxFitness){
+                maxFitness = population.get(i).c_fitness;
+                sol_index = i;
+            }
+        }
+        if (sol_index != -1){
+            System.out.println("Case " + numOfTestCase );
+            for(int j=0; j<items.size();j++)
+            {
+                if(population.get(sol_index).genes.get(j)){
+                    numOfSelectedItems++;
+                }
+            }
+            System.out.println("NUM Of Selected Items " + numOfSelectedItems );
+            System.out.println("Items Num " + "Weight" +" Value");
+            System.out.println("Total value " +maxFitness );
+            int x=1;
+            for(int j=0; j<items.size();j++)
+            {
+                if(population.get(sol_index).genes.get(j)){
+                 System.out.println("   "+x+"        "+items.get(j).weight +"     "+items.get(j).value);
+                 x++;
+                }
+            }
+        }
+    }   
+    public static void printTest() {
+                Item item=new Item(5,4);
+        Item item2=new Item(4,4);
+        Item item3=new Item(2,1);
+        Item item4=new Item(2,7);
+        Item item5=new Item(4,6);
+        ArrayList<Item> items=new  ArrayList<Item>();
+        items.add(item);
+        items.add(item2);
+        items.add(item3);
+        items.add(item4);
+        items.add(item5);
+        initializePopulation(5);
+        fitnessEvaluation(items,10);
+        select2Individuals();
+   
+   
+       System.out.println(index_selectedIndividuals.get(0));
+       System.out.println(index_selectedIndividuals.get(1));
+       System.out.println(selectedIndividuals.get(0).c_fitness);
+       System.out.println(selectedIndividuals.get(1).c_fitness);
+             
+             
+//        initializePopulation(20);
+     for(int i=0; i<population.size();i++)
+        {
+           System.out.println("--------------------------------------");
+            for(int j=0; j<5;j++)
+            {
+                    
+                   System.out.println(population.get(i).genes.get(j));
+
+            }
+            System.out.println(population.get(i).c_fitness);
+      
+  // double double_random=rand.nextDouble();
+      
+      
+        
+    }
+     
+     
+     for(int m=0; m<2;m++)
+        {
+           System.out.println("--------------------------------------");
+            for(int j=0; j<5;j++)
+            {
+                    
+                   System.out.println(selectedIndividuals.get(m).genes.get(j));
+
+            }
+            System.out.println(selectedIndividuals.get(m).c_fitness);
+          
+        }System.out.println("CCCCCCCCCCCCCCCCCCCCCCCCCCCCC");  
+     crossOver(5);
+     
+     for(int i=0; i<2;i++)
+        {
+           System.out.println("--------------------------------------");
+            for(int j=0; j<5;j++)
+            {
+                    
+                   System.out.println(selectedIndividuals.get(i).genes.get(j));
+
+            }
+            System.out.println(selectedIndividuals.get(i).c_fitness);
+      
+  // double double_random=rand.nextDouble();
+      
+      
+        
+    }
+          System.out.println("MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM");
+          mutation_2Individuals();
+        for(int i=0; i<2;i++)
+        {
+           System.out.println("--------------------------------------");
+            for(int j=0; j<5;j++)
+            {
+                    
+                   System.out.println(selectedIndividuals.get(i).genes.get(j));
+
+            }
+            System.out.println(selectedIndividuals.get(i).c_fitness);
+        }
+          Replacement();
+          
+               for(int i=0; i<population.size();i++)
+        {
+           System.out.println("--------------------------------------");
+            for(int j=0; j<5;j++)
+            {
+                    
+                   System.out.println(population.get(i).genes.get(j));
+
+            }
+            System.out.println(population.get(i).c_fitness);
+      
+  // double double_random=rand.nextDouble();
+      
+      
+        
+    }
+          
+          
+    }    
+        
+        
+    
+    public static void main(String[] args) {
+        
+        //printTest();
+        
+        int numOfTestCase=0,sizeOfKnapsack=0,numberOfItems=0;
+        File myFile = new File("D:\\FCI\\Level 4\\FourthYear_first term\\Soft Computing\\Assignments\\knapsack_input.txt");
+        Scanner scanner;
+        ArrayList<Item> items = new ArrayList<>();
+        try {
+            scanner = new Scanner(myFile);
+            numOfTestCase= scanner.nextInt();
+           // System.out.println(numOfTestCase);
+           
+           for(int i=0;i<numOfTestCase;i++)
+            {
+               sizeOfKnapsack = scanner.nextInt();
+                numberOfItems = scanner.nextInt() ;
+//               System.out.println(sizeOfKnapsack);
+//               System.out.println(numberOfItems);
+               items = new ArrayList<>(numberOfItems);
+                for(int j=0;j<numberOfItems;j++)
+                {   
+                    items.add( new Item(scanner.nextInt() , scanner.nextInt()) );
+                  //  System.out.println(items.get(j).weight+" W    "+items.get(j).value+"   V");
+                }
+                System.out.println("  ------------- ---------------------");
+                
+                initializePopulation(numberOfItems);
+               // fitnessEvaluation(items,sizeOfKnapsack);
+               
+               
+                for(int j = 0; isValidPopulation() && j< generationSize; j++ ){
+                    fitnessEvaluation(items,sizeOfKnapsack);
+                    //***************************
+                    select2Individuals();
+                    crossOver(numberOfItems);
+                    mutation_2Individuals();
+                    Replacement();
+       
+                }
+                //printPoplutation(numberOfGenes);
+                getFinalSolution(i+1 ,items);
+            }
+           
+        }catch (FileNotFoundException e){
+            e.printStackTrace();
+        }
+
+    
+    }
+}
